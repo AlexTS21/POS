@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
+import ttkbootstrap as ttkb
 
 class ConfiguracionPage(ttk.Frame):
     def __init__(self, parent, style):
         super().__init__(parent)
 
         # Alinear arriba a la izquierda con margen
-        ttk.Label(self, text="Settings", font=('Helvetica', 24)).pack(anchor='nw', padx=10, pady=10)
-
+        ttkb.Label(self, text="⚙️ Settings", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
         form_frame = ttk.Frame(self)
         form_frame.pack(anchor='nw', padx=10)
 

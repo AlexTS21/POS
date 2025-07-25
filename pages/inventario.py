@@ -3,38 +3,44 @@ from ttkbootstrap.constants import *
 import sqlite3
 from ttkbootstrap import Style
 
-
-
 class InventarioPage(ttkb.Frame):
     def __init__(self, parent):
-        super().__init__(parent, padding=20)
+        super().__init__(parent )#, padding=20)
 
-        ttkb.Label(self, text="📦 Inventario", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(pady=10)
-        ttkb.Label(self, text="Escanea el código o escríbelo:", font=("Helvetica", 12)).pack(pady=(10, 5))
+        ttkb.Label(self, text="📦 Inventario", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
+        
         style = Style()
         style.configure("Custom.TButton", font=("Helvetica", 14))
         # Input and button
         input_frame = ttkb.Frame(self)
-        input_frame.pack(pady=5)
+        input_frame.pack(pady=5, fill='x', padx=(30, 30))  # Make it stretch horizontally
+
+        # Label and Entry aligned left
+        ttkb.Label(input_frame, text="Escanea el código o escríbelo:", font=("Helvetica", 12))\
+            .grid(column=0, row=0, columnspan=2, sticky='w', pady=(10, 5))
 
         self.entry = ttkb.Entry(input_frame, font=("Helvetica", 14), width=30)
-        self.entry.pack(side='left', padx=(0, 10))
-        self.entry.focus_set()
+        self.entry.grid(column=0, row=1, padx=(0, 10), sticky='w')
 
+        # Spacer column to push the button to the right
+        input_frame.grid_columnconfigure(1, weight=1)
+
+        # Button aligned right
         ttkb.Button(
             input_frame,
             text="REGISTRAR PRODUCTOS",
             bootstyle="success",
             command=self.process_input,
             style="Custom.TButton"
-        ).pack(side='right')
+        ).grid(column=2, row=1, sticky='e')
 
-        self.result_label = ttkb.Label(self, text="", font=("Helvetica", 12), bootstyle="info")
-        self.result_label.pack(pady=10)
+
+        self.result_label = ttkb.Label(input_frame, text="", font=("Helvetica", 12), bootstyle="info")
+        self.result_label.grid(column=0, row=2, columnspan=3, pady=(5, 7), sticky='w')
 
         # Table and scrollbar
         table_frame = ttkb.Frame(self)
-        table_frame.pack(fill='both', expand=True, pady=10)
+        table_frame.pack(fill='both', expand=True, pady=10, padx=(30, 30))
 
         scrollbar = ttkb.Scrollbar(table_frame)
         scrollbar.pack(side='right', fill='y')
@@ -71,7 +77,7 @@ class InventarioPage(ttkb.Frame):
         self.entry.bind("<Return>", self.process_input)
 
     def process_input(self, event=None):
-        code = self.entry.get().strip()
+        code = str(self.entry.get().strip())
         if code:
            
             
@@ -79,9 +85,9 @@ class InventarioPage(ttkb.Frame):
             if len(products) > 0:
                 self.display_products(products)
 
-                self.result_label.config(text=f"Código ingresado: {code}", foreground="green")
+                self.result_label.config(text=f"Código ingresado: {code}", bootstyle="success")
             else:
-                self.result_label.config(text=f"Producto no encontrado", foreground="red")
+                self.result_label.config(text=f"Producto no encontrado", bootstyle="danger")
             self.entry.delete(0, 'end')
 
 

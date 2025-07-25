@@ -56,13 +56,13 @@ class LoginScreen:
         self.password_entry.pack(fill='x', pady=5)
         
         # Login button
-        login_btn = ttk.Button(
+        self.login_btn = ttk.Button(
             self.login_frame,
             text="Acceder",
             command=self.attempt_login,
             bootstyle=PRIMARY
         )
-        login_btn.pack(pady=20)
+        self.login_btn.pack(pady=20)
         
         # Error label (hidden by default)
         self.error_label = ttk.Label(
@@ -73,14 +73,14 @@ class LoginScreen:
         )
         
         # Bind Enter key to login
-        self.root.bind('<Return>', lambda e: self.attempt_login())
-        
-        # Add escape key to exit fullscreen
-        self.root.bind('<Escape>', lambda e: self.root.attributes('-fullscreen', False))
+        self.login_btn.bind('<Return>', lambda e: self.attempt_login())
+        self.username_entry.bind('<Return>', lambda e: self.attempt_login())
+        self.password_entry.bind('<Return>', lambda e: self.attempt_login())
+       
     
     def attempt_login(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
+        username = str(self.username_entry.get())
+        password = str(self.password_entry.get())
 
         user = self.check_credentials(username, password)
         if user:
