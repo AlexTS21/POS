@@ -49,7 +49,7 @@ class InventarioPage(ttkb.Frame):
         # Add treeview
         self.tree = ttkb.Treeview(
             table_frame,
-            columns=('ID', 'Código', 'Producto', 'Precio', 'Cantidad', 'Herramientas'),
+            columns=('ID', 'Código', 'Producto', 'Precio', 'Cantidad', 'Unidad', 'Herramientas'),
             show='headings',
             yscrollcommand=scrollbar.set,
             height=10
@@ -61,13 +61,15 @@ class InventarioPage(ttkb.Frame):
         self.tree.heading('Producto', text='Producto')
         self.tree.heading('Precio', text='Precio')
         self.tree.heading('Cantidad', text='Cantidad')
+        self.tree.heading('Unidad', text='Unidad')
         self.tree.heading('Herramientas', text='Herramientas')
 
         self.tree.column('ID', width=30, anchor='center')
-        self.tree.column('Código', width=100)
-        self.tree.column('Producto', width=150)
-        self.tree.column('Precio', width=80, anchor='e')
+        self.tree.column('Código', width=100,anchor='center')
+        self.tree.column('Producto', width=150, anchor='center')
+        self.tree.column('Precio', width=80, anchor='center')
         self.tree.column('Cantidad', width=80, anchor='center')
+        self.tree.column('Unidad', width=80, anchor='center')
         self.tree.column('Herramientas', width=100, anchor='center')
 
         self.tree.pack(fill='both', expand=True)
@@ -80,8 +82,6 @@ class InventarioPage(ttkb.Frame):
     def process_input(self, event=None):
         code = str(self.entry.get().strip())
         if code:
-           
-            
             products = self.search_product(code)
             if len(products) > 0:
                 self.display_products(products)
@@ -99,10 +99,11 @@ class InventarioPage(ttkb.Frame):
 
         # Buscar coincidencias parciales en barcode o product_name
         query = """
-            SELECT id, barcode, product_name, price, amount 
+            SELECT id, barcode, product_name, price, amount, unit_type 
             FROM inventory 
             WHERE active = 1 AND (barcode LIKE ? OR product_name LIKE ?)
         """
+
         wildcard_code = f"%{code}%"
         cursor.execute(query, (wildcard_code, wildcard_code))
         rows = cursor.fetchall()
@@ -116,8 +117,10 @@ class InventarioPage(ttkb.Frame):
                 'barcode': row[1],
                 'product_name': row[2],
                 'price': row[3],
-                'amount': row[4]
+                'amount': row[4],
+                'unit_type': row[5]
             })
+
 
         return products
 
@@ -127,6 +130,7 @@ class InventarioPage(ttkb.Frame):
             self.tree.delete(row)
 
         for product in products:
+            unidad_str = self.unit_type_to_text(product['unit_type'])
             self.tree.insert(
                 '', 'end',
                 values=(
@@ -135,9 +139,18 @@ class InventarioPage(ttkb.Frame):
                     product['product_name'],
                     f"${product['price']:.2f}",
                     product['amount'],
+                    unidad_str,
                     "Modificar"
                 )
             )
+
+    def unit_type_to_text(self, unit_type):
+        return {
+            0: "Pieza",
+            1: "Caja",
+            2: "Metro"
+        }.get(unit_type, "Desconocido")
+
 
 
     def load_active_products(self):
@@ -150,10 +163,11 @@ class InventarioPage(ttkb.Frame):
             self.tree.delete(row)
 
         # Insert products
-        cursor.execute("SELECT id, barcode, product_name, price, amount FROM inventory WHERE active = 1")
+        cursor.execute("SELECT id, barcode, product_name, price, amount, unit_type FROM inventory WHERE active = 1")
         for row in cursor.fetchall():
-            id_, barcode, name, price, amount = row
-            self.tree.insert('', 'end', values=(id_, barcode, name, f"${price:.2f}", amount, "Modificar"))
+            id_, barcode, name, price, amount, unit_type = row
+            unidad_str = self.unit_type_to_text(unit_type)
+            self.tree.insert('', 'end', values=(id_, barcode, name, f"${price:.2f}", amount, unidad_str, "Modificar"))
 
         conn.close()
 
@@ -165,7 +179,7 @@ class InventarioPage(ttkb.Frame):
             row_id = self.tree.identify_row(event.y)
             col_index = int(column.replace("#", "")) - 1
 
-            if col_index == 5:  # Herramientas column index
+            if col_index == 6:  # Herramientas column index
                 item = self.tree.item(row_id)
                 product_data = item['values']
                 self.modify_product(product_data)

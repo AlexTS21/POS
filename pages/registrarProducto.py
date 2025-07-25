@@ -3,7 +3,7 @@ from ttkbootstrap.constants import *
 import sqlite3
 from ttkbootstrap import Style
 import random
-
+#0 pieza 1 caja 2 metro
 class RegistroProductoPage(ttkb.Frame):
     def __init__(self, parent, go_back_callback):
         super().__init__(parent)
@@ -41,8 +41,28 @@ class RegistroProductoPage(ttkb.Frame):
                 generar_checkbox.grid(row=i+1, column=2, padx=10)
 
         form_frame.grid_columnconfigure(1, weight=1)
+
+        self.tipo_var = ttkb.StringVar(value="0")  # valor por defecto
+        # Label de tipo
+        ttkb.Label(form_frame, text="Tipo:", font=("Helvetica", 12)).grid(row=5, column=0, sticky="w", pady=5)
+
+        # Radio buttons
+        ttkb.Radiobutton(
+            form_frame, text="Pieza", variable=self.tipo_var, value="0", bootstyle="info"
+        ).grid(row=5, column=1, sticky="w", padx=5)
+
+        ttkb.Radiobutton(
+            form_frame, text="Caja", variable=self.tipo_var, value="1", bootstyle="info"
+        ).grid(row=5, column=1, sticky="w", padx=80)
+
+        ttkb.Radiobutton(
+            form_frame, text="Metro", variable=self.tipo_var, value="2", bootstyle="info"
+        ).grid(row=5, column=1, sticky="w", padx=160)
+
+
+
         self.infoLabel = ttkb.Label(form_frame, text="", font=("Helvetica", 12), bootstyle="info")
-        self.infoLabel.grid(row=5, column=1, sticky="w", pady=5)
+        self.infoLabel.grid(row=6, column=1, sticky="w", pady=5)
         button_frame = ttkb.Frame(self)
         button_frame.pack(pady=15)
 
@@ -58,9 +78,9 @@ class RegistroProductoPage(ttkb.Frame):
             conn = sqlite3.connect('database.db')
             cursor = conn.cursor()
             cursor.execute('''
-            INSERT OR IGNORE INTO inventory (barcode, product_name, price, amount, active)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (codigo, nombre, precio, cantidad, 1))
+            INSERT OR IGNORE INTO inventory (barcode, product_name, price, amount, unit_type, active)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (codigo, nombre, precio, cantidad, int(self.tipo_var.get()), 1))
 
             # Commit changes and close connection
             conn.commit()
