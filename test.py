@@ -1,23 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
-import ttkbootstrap as ttkb
 
-def main():
-    try:
-        root = ttkb.Window(themename="darkly")
-        root.title("TTK Bootstrap Navbar")
-        root.geometry("800x600")
-        
-        # Simple label to verify window creation
-        test_label = ttkb.Label(root, text="Window created successfully!", bootstyle="danger")
-        test_label.pack(pady=50)
-        
-        # Add your navbar code here...
-        
-        root.mainloop()
-    except Exception as e:
-        print(f"Error occurred: {str(e)}")
-        input("Press Enter to close...")  # Keeps window open to see error
+root = tk.Tk()
 
-if __name__ == "__main__":
-    main()
+ttk.Label(root, text="Name:").grid(row=0, column=0, sticky='e')
+ttk.Entry(root).grid(row=0, column=1, padx=5, pady=5)
+
+ttk.Label(root, text="Password:").grid(row=1, column=0, sticky='e')
+ttk.Entry(root, show="*").grid(row=1, column=1, padx=5, pady=5)
+
+ttk.Button(root, text="Login").grid(row=2, column=0, columnspan=2, pady=10)
+
+root.mainloop()
