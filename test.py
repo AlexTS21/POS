@@ -1,14 +1,12 @@
-import tkinter as tk
-from tkinter import ttk
+# import EAN13 from barcode module
+from barcode import EAN13
 
-root = tk.Tk()
+# Make sure to pass the number as string
+number = '123456789101'
 
-ttk.Label(root, text="Name:").grid(row=0, column=0, sticky='e')
-ttk.Entry(root).grid(row=0, column=1, padx=5, pady=5)
+# Now, let's create an object of EAN13
+# class and pass the number
+my_code = EAN13(number)
 
-ttk.Label(root, text="Password:").grid(row=1, column=0, sticky='e')
-ttk.Entry(root, show="*").grid(row=1, column=1, padx=5, pady=5)
-
-ttk.Button(root, text="Login").grid(row=2, column=0, columnspan=2, pady=10)
-
-root.mainloop()
+# Our barcode is ready. Let's save it.
+my_code.save("new_code")

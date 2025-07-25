@@ -2,11 +2,12 @@ import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 import sqlite3
 from ttkbootstrap import Style
+import pages.registrarProducto as RP
 
 class InventarioPage(ttkb.Frame):
     def __init__(self, parent):
         super().__init__(parent )#, padding=20)
-
+        self.Frame = ttkb.Frame 
         ttkb.Label(self, text="📦 Inventario", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
         
         style = Style()
@@ -30,7 +31,7 @@ class InventarioPage(ttkb.Frame):
             input_frame,
             text="REGISTRAR PRODUCTOS",
             bootstyle="success",
-            command=self.process_input,
+            command=self.show_register_form,
             style="Custom.TButton"
         ).grid(column=2, row=1, sticky='e')
 
@@ -174,3 +175,15 @@ class InventarioPage(ttkb.Frame):
         product_id = product_data[0]
         print(f"Modificar producto ID {product_id} - TODO: abrir ventana de edición")
         # You can implement a pop-up window to edit this product's data
+
+    def show_register_form(self):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        RP.RegistroProductoPage(self.master, self.return_to_inventory).pack(fill='both', expand=True)
+
+    def return_to_inventory(self):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        self.pack(fill='both', expand=True)
+        self.load_active_products()
+

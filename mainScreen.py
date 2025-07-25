@@ -99,12 +99,14 @@ class MainApplication:
 
     # ------------------- Page Navigation -------------------
     def show_page(self, page_name):
+       
         # If already showing the desired page, do nothing
-        if self.current_page == page_name:
-            return
+        #if self.current_page == page_name:
+         #   return
 
         # Hide current page if any
         if self.current_page:
+            self.clear_content()
             self.pages[self.current_page].pack_forget()
 
         # Create page if it doesn't exist yet
