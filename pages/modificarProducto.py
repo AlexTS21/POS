@@ -3,6 +3,7 @@ from ttkbootstrap.constants import *
 import sqlite3
 from ttkbootstrap import Style
 import random
+import time
 #0 pieza 1 caja 2 metro
 class ModificarProductoPage(ttkb.Frame):
     def __init__(self, parent, go_back_callback, id):
@@ -12,16 +13,15 @@ class ModificarProductoPage(ttkb.Frame):
 
         info_frame = ttkb.Frame(self)
         info_frame.pack(padx=50, pady=10, fill='x')
-        ttkb.Button(info_frame, text="Volver al inventario", bootstyle="secondary",  command=go_back_callback).grid(row=0, column=2, sticky='w', pady=5)
-
+        info_frame.grid_columnconfigure(3, weight=1)
+        ttkb.Button(info_frame, text="Volver al inventario", bootstyle="secondary",  command=go_back_callback).grid(row=0, column=3, sticky='e', pady=5)
         ttkb.Label(info_frame, text="Información:", font=("Helvetica", 12, "bold")).grid(row=0, column=0, sticky="w", padx=(0,5))
-        #Informacion de los productos
-        ttkb.Label(info_frame, text=f'Id:       {id}', font=("Helvetica", 12)).grid(row=1, column=1, sticky="w", padx=(0,5))
-        ttkb.Label(info_frame, text=f'Codigo:   {self.product['code']}', font=("Helvetica", 12)).grid(row=2, column=1, sticky="w", padx=(0,5))
-        ttkb.Label(info_frame, text=f'Producto: {self.product['product_name']}', font=("Helvetica", 12)).grid(row=3, column=1, sticky="w", padx=(0,5))
-        ttkb.Label(info_frame, text=f'Precio:      {str(self.product['price'])}', font=("Helvetica", 12)).grid(row=4, column=1, sticky="w", padx=(0,5))
-        ttkb.Label(info_frame, text=f'Cantidad: {self.product['amount']}', font=("Helvetica", 12)).grid(row=5, column=1, sticky="w", padx=(0,5))
-
+        self.LabelsInfo = []
+        for i, item in enumerate(self.product.items()):
+            key, atrib = item
+            ttkb.Label(info_frame, text=f'{key}:').grid(row=i+1, column=1, sticky="w", padx=(45,5))
+            self.LabelsInfo.append(ttkb.Label(info_frame, text=f'{atrib}'))
+            self.LabelsInfo[i].grid(row=i+1, column=2, sticky="w", padx=(0,5))
         #OBtener la informacion de los productos
 
         form_frame = ttkb.Frame(self)
@@ -49,7 +49,7 @@ class ModificarProductoPage(ttkb.Frame):
         button_frame.pack(pady=15)
 
         ttkb.Button(button_frame, text="Eliminar producto", bootstyle="danger", command=lambda: self.eliminar_producto(id)).pack(side="left", padx=10)
-        ttkb.Button(button_frame, text="Guardar Cambios", bootstyle="success", command=self.registrar_Producto).pack(side="left", padx=10)
+        ttkb.Button(button_frame, text="Guardar Cambios", bootstyle="success", command=lambda: self.modificar_Producto(id)).pack(side="left", padx=10)
 
     def get_product_info(self, id):
         #Coneccion a la base de datos
@@ -57,17 +57,21 @@ class ModificarProductoPage(ttkb.Frame):
         cursor = conn.cursor()
         cursor.execute("SELECT barcode, product_name, price, amount, unit_type FROM inventory WHERE  id=?", (id,))
         product = cursor.fetchone()
-        
+        unidad = {
+            0: "Pieza",
+            1: "Caja",
+            2: "Metro"
+        }
         if product:
             conn.commit()
             conn.close()
             return  {
                 "id": id,
-                "code": product[0],
-                "product_name": product[1],
-                "price": product[2],
-                "amount": product[3],
-                "unit_type": product[4]
+                "Codigo": product[0],
+                "Producto": product[1],
+                "Precio": f'${product[2]}',
+                "Cantidad": product[3],
+                "Unidad": unidad[int(product[4])]
             }
         conn.commit()
         conn.close()
@@ -87,25 +91,69 @@ class ModificarProductoPage(ttkb.Frame):
 
             print(f"Error al desactivar el producto: {e}")
             
-
-    def registrar_Producto(self):
-        #if self.check_entery():
-            codigo = self.entries['código'].get()
-            nombre = self.entries['nombre del producto'].get()
-            precio = float(self.entries['precio'].get())
-            cantidad = int(self.entries['cantidad'].get())
-            #Coneccion a la base de datos
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute('''
-            INSERT OR IGNORE INTO inventory (barcode, product_name, price, amount, unit_type, active)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ''', (codigo, nombre, precio, cantidad, int(self.tipo_var.get()), 1))
-
-            # Commit changes and close connection
-            conn.commit()
-            conn.close()
-            self.infoLabel.config(text=f"Proucto {nombre} registrado", bootstyle="success")
-            print("Base de datos registro")
+    def check_entry(self):
+        if len(self.precio.get().strip()) == 0 and len(self.cantidad.get().strip()) == 0:
+            self.infoLabel.config(text=f'Rellna alguno de los campos para modificar el producto',bootstyle="warning")
+            return None
+        if len(self.precio.get().strip()):
+            try:
+                if float(self.precio.get().strip()) <= 0 :
+                    self.infoLabel.config(text=f'El precio debe ser positivo diferente de 0',bootstyle="warning")
+                    return None
+            except ValueError:
+                self.infoLabel.config(text=f'El precio debe ser un número',bootstyle="warning")
+                return None
+        if len(self.cantidad.get().strip()):
+            try:
+                if int(self.cantidad.get().strip()) < 0:
+                    self.infoLabel.config(text=f'La cantidad debe ser positiva',bootstyle="warning")
+            except ValueError:
+                self.infoLabel.config(text=f'La cantidad debe de ser un numero entero',bootstyle="warning")
+                return None
+            
+        return True
     
+    def modificar_Producto(self, id):
+        if self.check_entry():
+            try:
+                conn = sqlite3.connect('database.db')
+                cursor = conn.cursor()
+                if len(self.precio.get().strip()) > 0 and len(self.cantidad.get().strip()) > 0: 
+                # Actualizar cantidad sumando delta_cantidad al valor actual
+                    cursor.execute("""
+                        UPDATE inventory
+                        SET price = ?, amount = amount + ?
+                        WHERE id = ? AND active = 1
+                    """, (float(self.precio.get().strip()), int(self.cantidad.get().strip()), id))
+                    self.LabelsInfo[3].config(text=f'${str(float(self.precio.get().strip()))}')
+                    self.LabelsInfo[4].config(text=str(int(self.cantidad.get().strip()) + int(self.product['Cantidad'])))
+                    self.product['Cantidad'] = int(self.product['Cantidad']) + int(self.cantidad.get().strip())
+                elif len(self.precio.get().strip()) == 0 and len(self.cantidad.get().strip()) > 0:
+                    cursor.execute("""
+                        UPDATE inventory
+                        SET amount = amount + ?
+                        WHERE id = ? AND active = 1
+                    """, (int(self.cantidad.get().strip()), id))
+                    self.LabelsInfo[4].config(text=str(int(self.cantidad.get().strip()) + int(self.product['Cantidad'])))
+                    self.product['Cantidad'] = int(self.product['Cantidad']) + int(self.cantidad.get().strip())
+
+                elif len(self.precio.get().strip()) > 0 and len(self.cantidad.get().strip()) == 0:
+                    cursor.execute("""
+                        UPDATE inventory
+                        SET price = ?
+                        WHERE id = ? AND active = 1
+                    """, (float(self.precio.get().strip()), id))
+                    self.LabelsInfo[3].config(text=f'${str(float(self.precio.get().strip()))}')
+                self.infoLabel.config(text=f'Cambios aplicados al producto con id {id}',bootstyle="success")
+                self.clean_inputs()
+                conn.commit()
+                conn.close()
+                return True
+            except sqlite3.Error as e:
+                print("Error al actualizar:", e)
+                return False
     
+    def clean_inputs(self):
+        self.cantidad.delete(0, 'end')
+        self.precio.delete(0, 'end')
+        
