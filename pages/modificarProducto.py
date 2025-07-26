@@ -7,71 +7,89 @@ import random
 class ModificarProductoPage(ttkb.Frame):
     def __init__(self, parent, go_back_callback, id):
         super().__init__(parent)
+        self.product = self.get_product_info(id)
+        ttkb.Label(self, text="✏️Modificar producto", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
 
-        ttkb.Label(self, text="✏️ Modificar producto", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
+        info_frame = ttkb.Frame(self)
+        info_frame.pack(padx=50, pady=10, fill='x')
+        ttkb.Button(info_frame, text="Volver al inventario", bootstyle="secondary",  command=go_back_callback).grid(row=0, column=2, sticky='w', pady=5)
+
+        ttkb.Label(info_frame, text="Información:", font=("Helvetica", 12, "bold")).grid(row=0, column=0, sticky="w", padx=(0,5))
+        #Informacion de los productos
+        ttkb.Label(info_frame, text=f'Id:       {id}', font=("Helvetica", 12)).grid(row=1, column=1, sticky="w", padx=(0,5))
+        ttkb.Label(info_frame, text=f'Codigo:   {self.product['code']}', font=("Helvetica", 12)).grid(row=2, column=1, sticky="w", padx=(0,5))
+        ttkb.Label(info_frame, text=f'Producto: {self.product['product_name']}', font=("Helvetica", 12)).grid(row=3, column=1, sticky="w", padx=(0,5))
+        ttkb.Label(info_frame, text=f'Precio:      {str(self.product['price'])}', font=("Helvetica", 12)).grid(row=4, column=1, sticky="w", padx=(0,5))
+        ttkb.Label(info_frame, text=f'Cantidad: {self.product['amount']}', font=("Helvetica", 12)).grid(row=5, column=1, sticky="w", padx=(0,5))
+
+        #OBtener la informacion de los productos
 
         form_frame = ttkb.Frame(self)
         form_frame.pack(padx=50, pady=10, fill='x')
 
-        style = Style()
-        style.configure("Custom.TButton", font=("Helvetica", 14))
-
-        labels = ["Código", "Nombre del producto", "Precio", "Cantidad"]
+        #Agregar el campo de Modificar Precio y Cantidad a aumentar
         self.entries = {}
         self.generate_var = ttkb.IntVar()
+        ttkb.Label(form_frame, text="Precio:", font=("Helvetica", 12)).grid(row=0, column=0, sticky="w", pady=5)
+        self.precio = ttkb.Entry(form_frame,  font=("Helvetica", 12))
+        self.precio.grid(row=0, column=1, sticky="ew", pady=5)
 
-        ttkb.Button(form_frame, text="Volver al inventario", bootstyle="secondary",  command=go_back_callback).grid(row=0, column=2, sticky='e', pady=5)
-
-        for i, label in enumerate(labels):
-            ttkb.Label(form_frame, text=label + ":", font=("Helvetica", 12)).grid(row=i+1, column=0, sticky="w", pady=5)
-
-            entry = ttkb.Entry(form_frame,  font=("Helvetica", 12))
-            entry.grid(row=i+1, column=1, sticky="ew", pady=5)
-            self.entries[label.lower()] = entry
-
-            # Si es el campo Código, agregamos el checkbox "Generar"
-            if label == "Código":
-                generar_checkbox = ttkb.Checkbutton(
-                    form_frame,
-                    text="Generar",
-                    variable=self.generate_var,
-                    command=self.toggle_codigo_entry,
-                    bootstyle="info"
-                )
-                generar_checkbox.grid(row=i+1, column=2, padx=10)
+        ttkb.Label(form_frame, text="Cantidad a aumentar:", font=("Helvetica", 12)).grid(row=1, column=0, sticky="w", pady=5)
+        self.cantidad = ttkb.Entry(form_frame,  font=("Helvetica", 12))
+        self.cantidad.grid(row=1, column=1, sticky="ew", pady=5)
+       
 
         form_frame.grid_columnconfigure(1, weight=1)
 
-        self.tipo_var = ttkb.StringVar(value="0")  # valor por defecto
-        # Label de tipo
-        ttkb.Label(form_frame, text="Tipo:", font=("Helvetica", 12)).grid(row=5, column=0, sticky="w", pady=5)
-
-        # Radio buttons
-        ttkb.Radiobutton(
-            form_frame, text="Pieza", variable=self.tipo_var, value="0", bootstyle="info"
-        ).grid(row=5, column=1, sticky="w", padx=5)
-
-        ttkb.Radiobutton(
-            form_frame, text="Caja", variable=self.tipo_var, value="1", bootstyle="info"
-        ).grid(row=5, column=1, sticky="w", padx=80)
-
-        ttkb.Radiobutton(
-            form_frame, text="Metro", variable=self.tipo_var, value="2", bootstyle="info"
-        ).grid(row=5, column=1, sticky="w", padx=160)
-
-
-
+       
         self.infoLabel = ttkb.Label(form_frame, text="", font=("Helvetica", 12), bootstyle="info")
-        self.infoLabel.grid(row=6, column=1, sticky="w", pady=5)
+        self.infoLabel.grid(row=2, column=1, sticky="w", pady=5)
+
         button_frame = ttkb.Frame(self)
         button_frame.pack(pady=15)
 
-        ttkb.Button(button_frame, text="Eliminar producto", bootstyle="danger", command=self.registrar_Producto).pack(side="left", padx=10)
+        ttkb.Button(button_frame, text="Eliminar producto", bootstyle="danger", command=lambda: self.eliminar_producto(id)).pack(side="left", padx=10)
         ttkb.Button(button_frame, text="Guardar Cambios", bootstyle="success", command=self.registrar_Producto).pack(side="left", padx=10)
 
+    def get_product_info(self, id):
+        #Coneccion a la base de datos
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT barcode, product_name, price, amount, unit_type FROM inventory WHERE  id=?", (id,))
+        product = cursor.fetchone()
+        
+        if product:
+            conn.commit()
+            conn.close()
+            return  {
+                "id": id,
+                "code": product[0],
+                "product_name": product[1],
+                "price": product[2],
+                "amount": product[3],
+                "unit_type": product[4]
+            }
+        conn.commit()
+        conn.close()
+        return None
+    
+    def eliminar_producto(self, id_producto):
+        try:
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            cursor.execute("UPDATE inventory SET active = 0 WHERE id = ?", (id_producto,))
+            conn.commit()
+            conn.close()
+            self.infoLabel.config(text=f'El producto con ID {id_producto} fue eliminado',bootstyle="success")
+            print(f"Producto con ID {id_producto} desactivado correctamente.")
+        except sqlite3.Error as e:
+            self.infoLabel.config(text=f'Error: {e}',bootstyle="danger")
+
+            print(f"Error al desactivar el producto: {e}")
+            
 
     def registrar_Producto(self):
-        if self.check_entery():
+        #if self.check_entery():
             codigo = self.entries['código'].get()
             nombre = self.entries['nombre del producto'].get()
             precio = float(self.entries['precio'].get())
@@ -90,77 +108,4 @@ class ModificarProductoPage(ttkb.Frame):
             self.infoLabel.config(text=f"Proucto {nombre} registrado", bootstyle="success")
             print("Base de datos registro")
     
-    def check_entery(self):
-        for entry in self.entries.values():
-            if len(str(entry.get())) == 0:
-                #Show message
-                self.infoLabel.config(text="Rellena todos los campos por favor", bootstyle="warning")
-                return None
-        #Codigo
-        try:
-            int(self.entries["código"].get())
-            if len(self.entries["código"].get()) < 10:
-                self.infoLabel.config(text="El codigo de barras tiene que tener mas de 10 digitos", bootstyle="warning")
-                return None
-            codigos = self.obtener_codigos()
-            if self.entries["código"].get() in codigos:
-                self.infoLabel.config(text="El codigo de barras ya existe en la base", bootstyle="warning")
-                return None
-        except ValueError:
-            self.infoLabel.config(text="El codigo tiene que ser un numero entero", bootstyle="warning")
-            return None
-        
-        #precio
-        try:
-            if float(self.entries["precio"].get()) < 0:
-                self.infoLabel.config(text="Introdusca un precio positivo", bootstyle="warning")
-                return None
-        except ValueError:
-            self.infoLabel.config(text="El precio tiene que ser un numero", bootstyle="warning")
-            return None
-        #cantidad
-        try:
-            if int(self.entries["cantidad"].get()) < 0:
-                self.infoLabel.config(text="Introdusca una cantidad positiva", bootstyle="warning")
-                return None
-        except ValueError:
-            self.infoLabel.config(text="La cantidad tiene que ser un numero entero", bootstyle="warning")
-            return None
-        return 1
-
-    def obtener_codigos(self):
-        # Conexión a la base de datos
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            SELECT barcode
-            FROM inventory 
-        ''')
-
-        # Obtener todos los resultados como lista de tuplas
-        resultados = cursor.fetchall()
-
-        # Extraer solo los códigos de las tuplas
-        codigos = [fila[0] for fila in resultados]
-
-        conn.close()
-        return codigos
-
-
-    def toggle_codigo_entry(self):
-        entry = self.entries["código"]
-        codigos = self.obtener_codigos()
-        if self.generate_var.get() == 1:
-            random_code = ''.join(str(random.randint(0, 9)) for _ in range(12))
-            while random_code in codigos:
-                random_code = ''.join(str(random.randint(0, 9)) for _ in range(12))
-            entry.delete(0, 'end')
-            entry.insert(0, random_code)
-            entry.config(state='disabled')
-        else:
-            entry.config(state='normal')
-
-
     
-        
