@@ -92,7 +92,7 @@ class VentasPage(ttk.Frame):
                         self.actualizar_total()
                         self.result_label.config(text=f"El producto {producto["producto"]} se agrego exitosamente", bootstyle="success")
                     else:
-                        self.result_label.config(text=f"No hay unidades suficientes para vender existencias={producto["existencia"]}", bootstyle="danger")
+                        self.result_label.config(text=f"No hay unidades suficientes para vender existencias: {producto["existencia"]}", bootstyle="danger")
                         self.barcode_entry.delete(0, tk.END)
                 else:
                     producto["cantidad"] = 1
@@ -118,9 +118,15 @@ class VentasPage(ttk.Frame):
                 return cantidad_actual, row_id
                 break
         return None
+    
+    def get_product_on_list(self, product_name):
+        for p in self.productos:
+            if p["producto"] == product_name:
+                return p
+        return None
 
     def insertar_en_tabla(self, producto):
-        self.tree.insert("", "end", 
+        self.tree.insert("", index=0, 
                          values=(producto["producto"], 
                                  producto["cantidad"], 
                                  f"${producto["precio"]}",
@@ -135,7 +141,8 @@ class VentasPage(ttk.Frame):
         if column == "#2" and region == "cell":  # columna 'cantidad'
             item = self.tree.item(row)
             cantidad_actual = item['values'][1]
-            
+            nombre = self.tree.item(row)['values'][0]
+            existencia = self.get_product_on_list(nombre)["existencia"]
             # Crear ventana emergente
             top = tk.Toplevel(self)
             top.title("Editar cantidad")
@@ -163,10 +170,16 @@ class VentasPage(ttk.Frame):
             spinbox.pack()
 
         def aceptar():
+           
             nueva = cantidad_var.get()
-            if nueva >= 0:
+            if nueva >= 0 and nueva <=existencia:
                 self.tree.set(row, "cantidad", nueva)
                 self.actualizar_total()
+                self.result_label.config(text=f"Cantidad actualizada a: {nueva}", bootstyle="success")
+
+            elif nueva > existencia:
+                self.result_label.config(text=f"No hay unidades suficientes para vender existencias: {existencia}", bootstyle="danger")
+
             top.destroy()
 
         ttkb.Button(contenido, text="Aceptar", bootstyle="success", command=aceptar).pack(pady=(10, 0))
@@ -186,10 +199,20 @@ class VentasPage(ttk.Frame):
         row = self.tree.identify_row(event.y)
 
         if column == "#5" and region == "cell":  # columna 'acciones'
-            confirm = messagebox.askyesno("Confirmar", "¿Eliminar este producto?")
-            if confirm:
-                self.tree.delete(row)
-                self.actualizar_total()
+            #Descomentar para ventana de dialogo
+            #confirm = messagebox.askyesno("Confirmar", "¿Eliminar este producto?")
+            #if confirm:
+                #Eliminar tambien de la lista
+            product_name = self.tree.item(row)['values'][0]
+            for i, p in enumerate(self.productos):
+                if p['producto'] == product_name:
+                    indx = i
+                    break
+            self.productos.pop(indx)
+            self.tree.delete(row)
+            self.actualizar_total()
+            self.result_label.config(text=f"El producto fue eliminado: {product_name}", bootstyle="warning")
+
 
     def actualizar_total(self):
         total = 0

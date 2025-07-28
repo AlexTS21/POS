@@ -41,7 +41,7 @@ class MainApplication:
         self.navbar.pack(side='top', fill='x')
 
         ttk.Label(
-            self.navbar, text="🛍 Putno de Venta",
+            self.navbar, text="🛍 Punto de Venta",
             font=('Helvetica', 18, 'bold'),
             style='primary.Inverse.TLabel'
         ).pack(side='left', padx=(20, 30))
