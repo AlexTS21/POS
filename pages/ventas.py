@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 import ttkbootstrap as ttkb
+from ttkbootstrap import Style
 import sqlite3
+import pywhatkit
 
 class VentasPage(ttk.Frame):
     def __init__(self, parent):
@@ -60,14 +62,62 @@ class VentasPage(ttk.Frame):
         right_frame = ttk.Frame(main_frame)
         right_frame.pack(side="left", padx=(2, 4), fill="y")
 
-
+        #Total
         ttk.Label(right_frame, text="Total", font=("Arial", 28, "bold"), foreground="#333", width=12).pack(anchor="nw", pady=2)
        
         self.total_label = ttk.Label(right_frame, text="$ 0.00", font=("Arial", 28, "bold"), foreground="#BFBFBF",  width=12)
         self.total_label.pack(anchor="nw", pady=2)
         
+        #Input y labels para el cambio
+        ttk.Label(right_frame, text="Efectivo", font=("Arial", 14), foreground="#333", width=12).pack(anchor="nw", pady=(10,2))
+        # Variable asociada al Entry
+        self.efectivo_var = tk.StringVar()
+        self.efectivoEntry = ttk.Entry(right_frame, font=("Arial", 14), width=15, textvariable=self.efectivo_var)
+        self.efectivoEntry.pack(pady=(5,5), anchor="w")
+
+        self.change_label = ttkb.Label(right_frame, text="Cambio: $ 0.00", font=("Arial", 14), foreground="#BFBFBF")
+        self.change_label.pack(anchor="w", pady=2, fill="x")
+        # Detectar cambios en el Entry
+        self.efectivo_var.trace_add("write", self.actualizar_cambio)
         
+
+        # --- Checkbox para agregar número de teléfono ---
+        self.add_phone_var = tk.BooleanVar(value=False)
+        self.print_ticket_var = tk.BooleanVar(value=True)
+
+        self.phone_check = ttk.Checkbutton(
+            right_frame,
+            text="Enviar compra por WhatsApp",
+            variable=self.add_phone_var,
+            command=self.toggle_phone_entry
+        )
+        self.phone_check.pack(anchor="w", pady=(10, 2))
+
+        self.phone_entry = ttk.Entry(right_frame, font=("Arial", 14), width=15)
+        self.phone_entry.bind("<KeyRelease>", self.format_phone)
+
         
+
+        # --- Checkbox para imprimir ticket ---
+        self.print_ticket_check = ttk.Checkbutton(
+            right_frame,
+            text="Imprimir ticket",
+            variable=self.print_ticket_var
+        )
+        self.print_ticket_check.pack(anchor="w", pady=(5, 10))
+
+        # --- Botón de pagar ---
+        style = Style()
+        style.configure("Custom.TButton", font=("Helvetica", 14))
+        self.pay_button = ttk.Button(
+            right_frame,
+            text="PAGAR",
+            bootstyle="danger",
+            #style="Custom.TButton",
+            command=self.procesar_pago
+        )
+        self.pay_button.pack(anchor="s", side="bottom",fill="x", pady=(10, 10))
+
         # Datos internos
         self.productos = []
 
@@ -88,7 +138,10 @@ class VentasPage(ttk.Frame):
                 if result:
                     cantidad_actual, row_id = result
                     if cantidad_actual+1 <= producto["existencia"]:
-                        producto["cantidad"] = cantidad_actual + 1
+                        for p in self.productos:
+                            if p["producto"] == producto["producto"]:
+                                p["cantidad"] = cantidad_actual + 1
+                                break
                         nueva_cantidad = cantidad_actual + 1
                         self.tree.set(row_id, "cantidad", nueva_cantidad)
                         self.barcode_entry.delete(0, tk.END)
@@ -145,7 +198,8 @@ class VentasPage(ttk.Frame):
             item = self.tree.item(row)
             cantidad_actual = item['values'][1]
             nombre = self.tree.item(row)['values'][0]
-            existencia = self.get_product_on_list(nombre)["existencia"]
+            producto = self.get_product_on_list(nombre)
+            existencia = producto["existencia"]
             # Crear ventana emergente
             top = tk.Toplevel(self)
             top.title("Editar cantidad")
@@ -178,6 +232,7 @@ class VentasPage(ttk.Frame):
             if nueva >= 0 and nueva <=existencia:
                 self.tree.set(row, "cantidad", nueva)
                 self.actualizar_total()
+                producto["cantidad"] = nueva
                 self.result_label.config(text=f"Cantidad actualizada a: {nueva}", bootstyle="success")
 
             elif nueva > existencia:
@@ -191,6 +246,7 @@ class VentasPage(ttk.Frame):
         top.bind("<Escape>", lambda e: top.destroy())
 
         # Centrar la ventana
+
         top.update_idletasks()
         x = (top.winfo_screenwidth() - top.winfo_width()) // 2
         y = (top.winfo_screenheight() - top.winfo_height()) // 2
@@ -215,7 +271,6 @@ class VentasPage(ttk.Frame):
             self.tree.delete(row)
             self.actualizar_total()
             self.result_label.config(text=f"El producto fue eliminado: {product_name}", bootstyle="warning")
-
 
     def actualizar_total(self):
         total = 0
@@ -246,3 +301,84 @@ class VentasPage(ttk.Frame):
                 "precio": product[5]
             }
         return None
+    
+    def toggle_phone_entry(self):
+        if self.add_phone_var.get():
+            self.print_ticket_check.pack_forget()
+            self.pay_button.pack_forget()
+            self.phone_entry.pack(anchor="w", pady=(3, 10))
+            self.print_ticket_check.pack(anchor="w", pady=(5, 10))
+            self.pay_button.pack(anchor="s",side="bottom",fill="x", pady=(10, 10))
+        else:
+            self.phone_entry.pack_forget()
+
+    def procesar_pago(self):
+        if len(self.productos) > 0:
+            try:
+                if float(self.efectivoEntry.get()) > 0 and float(self.efectivoEntry.get()) >= float(self.total_label.cget("text")[1:]):
+                    if self.total_label.cget:
+                        self.send_info_whatsAPP()
+                    if self.print_ticket_var.get():
+                        print("ticket")
+                    self.result_label.config(text="Se realizo la venta", bootstyle="success")
+                else:
+                    self.result_label.config(text="Ingresa efectivo suficiente para relizar la venta", bootstyle="danger")
+            except ValueError:
+                self.result_label.config(text=ValueError)
+        else:
+            self.result_label.config(text="Agrega productos antes de realizar una venta", bootstyle="danger")
+        # Aquí iría la lógica de cobro, validaciones, ticket, etc.
+    
+    def send_info_whatsAPP(self):
+        number = "+52" + self.phone_entry.get().strip()
+        message = "✏️Pepeleria el Guerrero Dragon\n" \
+                    "Detalle de compra: \n"
+        for p in self.productos:
+            aux = f"• {p["cantidad"]} {p["producto"]}: {(float(p["cantidad"]) * float(p["precio"])):.2f}\n"
+            message += aux
+        message += f"Total:    {self.total_label.cget("text")} \n"
+        message += f"Efectivo: ${self.efectivoEntry.get()} \n"
+        message += f"Cambio:   ${self.change_label.cget("text")[10:]} \n"
+        message += "Gracias por tu preferencia (:"
+        print(message)
+        #try:
+        #    pywhatkit.sendwhatmsg_instantly(number, message)
+        #    print("Mensaje enviado (o se intentó enviar).")
+        #except Exception as e:
+        #    print(f"Ocurrió un error: {e}")
+
+    def actualizar_cambio(self, *args):
+        try:
+            if len(self.efectivo_var.get()) > 0:
+                efectivo = float(self.efectivo_var.get())
+                cambio = efectivo - float(self.total_label.cget("text")[1:])
+                if cambio < 0:
+                    self.change_label.config(text="Cambio: $ 0.00", foreground="#CA5555")
+                else:
+                    self.change_label.config(text=f"Cambio: $ {cambio:.2f}", foreground="#5ABB7A")
+            else:
+                self.change_label.config(text="Cambio: $ 0.00", foreground="#BFBFBF")
+        except ValueError:
+            self.change_label.config(text="Cambio: $ 0.00", foreground="#DDB547")
+
+    def format_phone(self, event=None):
+        # Get the original cursor position
+        original_cursor = self.phone_entry.index(tk.INSERT)
+
+        # Get raw digits
+        raw = ''.join(filter(str.isdigit, self.phone_entry.get()))
+        raw = raw[:10]
+
+        # Format the string
+        formatted = ""
+        for i, digit in enumerate(raw):
+            if i == 3 or i == 6:
+                formatted += " "
+                if original_cursor > i:
+                    original_cursor += 1  # adjust cursor for added space
+            formatted += digit
+
+        # Update entry and cursor
+        self.phone_entry.delete(0, tk.END)
+        self.phone_entry.insert(0, formatted)
+        self.phone_entry.icursor(min(original_cursor, len(formatted)))
