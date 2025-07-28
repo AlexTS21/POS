@@ -65,6 +65,9 @@ class VentasPage(ttk.Frame):
        
         self.total_label = ttk.Label(right_frame, text="$ 0.00", font=("Arial", 28, "bold"), foreground="#BFBFBF",  width=12)
         self.total_label.pack(anchor="nw", pady=2)
+        
+        
+        
         # Datos internos
         self.productos = []
 

@@ -110,15 +110,16 @@ class MainApplication:
             self.pages[self.current_page].pack_forget()
 
         # Create page if it doesn't exist yet
-        if page_name == "ventas":
-            self.pages["ventas"] = VT.VentasPage(self.main_content)
-        elif page_name == "inventario":
-            self.pages["inventario"] = IN.InventarioPage(self.main_content)
-        elif page_name == "corte":
-            self.pages["corte"] = CR.CortePage(self.main_content)
-        elif page_name == "configuracion":
-            self.pages["configuracion"] = CF.ConfiguracionPage(self.main_content, self.style)
-       
+        if page_name not in self.pages:
+            if page_name == "ventas":
+                self.pages["ventas"] = VT.VentasPage(self.main_content)
+            elif page_name == "inventario":
+                self.pages["inventario"] = IN.InventarioPage(self.main_content)
+            elif page_name == "corte":
+                self.pages["corte"] = CR.CortePage(self.main_content)
+            elif page_name == "configuracion":
+                self.pages["configuracion"] = CF.ConfiguracionPage(self.main_content, self.style)
+        
 
 
         # Show the new page
