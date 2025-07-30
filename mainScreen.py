@@ -113,7 +113,7 @@ class MainApplication:
         # Create page if it doesn't exist yet
         if page_name not in self.pages:
             if page_name == "ventas":
-                self.pages["ventas"] = VT.VentasPage(self.main_content)
+                self.pages["ventas"] = VT.VentasPage(self.main_content, self.logged_user)
             elif page_name == "inventario":
                 self.pages["inventario"] = IN.InventarioPage(self.main_content)
             elif page_name == "corte":
@@ -122,7 +122,10 @@ class MainApplication:
                 self.pages["configuracion"] = CF.ConfiguracionPage(self.main_content, self.style)
         
 
-
+        if page_name == "corte":
+            self.pages["corte"].get_sales()
+            self.pages["corte"].aplicar_filtros()
+            self.pages["corte"].actualizar_total()
         # Show the new page
         self.pages[page_name].pack(fill='both', expand=True)
         self.current_page = page_name

@@ -116,6 +116,56 @@ class DataBase:
         return
 
 
+    def get_today_cortes(self):
+        query = """
+            SELECT * FROM sales
+            WHERE date(date) = date('now', 'localtime') AND active = 1;
+            """
+
+        conn = sqlite3.connect(self.database)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        conn.close()
+    
+        campos = ["id", "total_price", "cash", "change", "total_products", "user", "date", "active"]
+
+
+        return [{k: v for k, v in zip(campos, r)} for r in resultados] if resultados else []
+
+
+    def corte_realizado_hoy(self):
+        query = """
+            SELECT 1 FROM corte
+            WHERE date(date) = date('now', 'localtime')
+            LIMIT 1;
+        """
+        conn = sqlite3.connect(self.database)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        resultado = cursor.fetchone()
+        conn.close()
+
+        # Retorna True si encontró al menos un corte hoy, False si no
+        return resultado is not None
+    
+    def get_detalles_venta(self, id_venta):
+        query = """
+            SELECT product_name, price, amount
+            FROM salesDetail
+            WHERE id_sale = ? AND active = 1;
+        """
+        try:
+            conn = sqlite3.connect(self.database)
+            cursor = conn.cursor()
+            cursor.execute(query, (id_venta,))
+            rows = cursor.fetchall()
+            conn.close()
+            return [{"product_name": r[0], "price": r[1], "amount": r[2]} for r in rows]
+        except Exception as e:
+            print("Error al obtener detalles de venta:", e)
+            return []
+
 #db = DataBase("database.db")
 #
 #print(db.search("inventory", {"product_name": "Papel lustre"}, ["id", "product_name", "amount", "active"], strict=True))

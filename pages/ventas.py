@@ -7,10 +7,11 @@ from scripts.database import DataBase
 
 #Intento de MEJORAR LA LOGICA DEL programa
 class VentasPage(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, user):
         super().__init__(parent)
         #Base de datos
         self.db = DataBase("database.db")
+        self.user = user
         ttkb.Label(self, text="🛒 Ventas", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
 
         # Layout principal dividido en dos columnas
@@ -329,7 +330,7 @@ class VentasPage(ttk.Frame):
                         "cash": float(self.efectivoEntry.get()),
                         "change": float(self.change_label.cget("text")[10:]),
                         "total_products": cant,
-                        "user": "admin",
+                        "user": self.user["username"],
                         "active": 1
                         # "date" no es necesario, se agrega automáticamente
                     })

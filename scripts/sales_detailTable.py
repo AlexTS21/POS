@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS salesDetail (
     active INTEGER NOT NULL CHECK(active IN (0, 1))
 );
 ''')
-#cursor.execute("DELETE FROM salesDetail;")
+#cursor.execute("DELETE FROM corte;")
 
 # Commit changes and close connection
 conn.commit()
