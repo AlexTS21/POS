@@ -4,11 +4,14 @@ import ttkbootstrap as ttkb
 from ttkbootstrap import Style
 import sqlite3
 import pywhatkit
+from scripts.database import DataBase
 
+#Intento de MEJORAR LA LOGICA DEL programa
 class VentasPage(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        
+        #Base de datos
+        self.db = DataBase("database.db")
         ttkb.Label(self, text="🛒 Ventas", font=("Helvetica", 20, "bold"), bootstyle="primary").pack(anchor='nw', padx=30, pady=10)
 
         # Layout principal dividido en dos columnas
@@ -119,7 +122,9 @@ class VentasPage(ttk.Frame):
         self.pay_button.pack(anchor="s", side="bottom",fill="x", pady=(10, 10))
 
         # Datos internos
-        self.productos = []
+        #Productos ahora es un diccionario que contiene el nombre del producto y la cantidad de existencia
+        #Puesto que ahora checaremos los cambios a traves de la tabla
+        self.productos = {}
 
         # Eventos
         self.tree.bind("<Double-1>", self.editar_cantidad)
@@ -133,17 +138,13 @@ class VentasPage(ttk.Frame):
         #Consultar la base de datos
         producto = self.get_Product(codigo)
         if producto:
+            self.productos[producto["producto"]] = producto["existencia"]
             if producto["existencia"] > 0:
                 result = self.is_product_on_table(producto["producto"])
                 if result:
                     cantidad_actual, row_id = result
                     if cantidad_actual+1 <= producto["existencia"]:
-                        for p in self.productos:
-                            if p["producto"] == producto["producto"]:
-                                p["cantidad"] = cantidad_actual + 1
-                                break
-                        nueva_cantidad = cantidad_actual + 1
-                        self.tree.set(row_id, "cantidad", nueva_cantidad)
+                        self.tree.set(row_id, "cantidad", (cantidad_actual + 1))
                         self.barcode_entry.delete(0, tk.END)
                         self.actualizar_total()
                         self.result_label.config(text=f"El producto {producto["producto"]} se agrego exitosamente", bootstyle="success")
@@ -152,12 +153,11 @@ class VentasPage(ttk.Frame):
                         self.barcode_entry.delete(0, tk.END)
                 else:
                     producto["cantidad"] = 1
-                    self.productos.append(producto)
                     self.insertar_en_tabla(producto)
                     self.barcode_entry.delete(0, tk.END)
                     self.actualizar_total()
                     self.result_label.config(text=f"El producto {producto["producto"]} se agrego exitosamente", bootstyle="success")
-
+                self.actualizar_cambio()
             else:
                 self.result_label.config(text=f"El producto {producto["producto"]} no puede ser vendido porque no hay existencias", bootstyle="danger")
                 self.barcode_entry.delete(0, tk.END)
@@ -175,11 +175,6 @@ class VentasPage(ttk.Frame):
                 break
         return None
     
-    def get_product_on_list(self, product_name):
-        for p in self.productos:
-            if p["producto"] == product_name:
-                return p
-        return None
 
     def insertar_en_tabla(self, producto):
         self.tree.insert("", index=0, 
@@ -198,8 +193,7 @@ class VentasPage(ttk.Frame):
             item = self.tree.item(row)
             cantidad_actual = item['values'][1]
             nombre = self.tree.item(row)['values'][0]
-            producto = self.get_product_on_list(nombre)
-            existencia = producto["existencia"]
+            existencia = self.productos[nombre]
             # Crear ventana emergente
             top = tk.Toplevel(self)
             top.title("Editar cantidad")
@@ -232,7 +226,7 @@ class VentasPage(ttk.Frame):
             if nueva >= 0 and nueva <=existencia:
                 self.tree.set(row, "cantidad", nueva)
                 self.actualizar_total()
-                producto["cantidad"] = nueva
+                self.actualizar_cambio()
                 self.result_label.config(text=f"Cantidad actualizada a: {nueva}", bootstyle="success")
 
             elif nueva > existencia:
@@ -261,13 +255,10 @@ class VentasPage(ttk.Frame):
             #Descomentar para ventana de dialogo
             #confirm = messagebox.askyesno("Confirmar", "¿Eliminar este producto?")
             #if confirm:
-                #Eliminar tambien de la lista
+                
             product_name = self.tree.item(row)['values'][0]
-            for i, p in enumerate(self.productos):
-                if p['producto'] == product_name:
-                    indx = i
-                    break
-            self.productos.pop(indx)
+            del self.productos[product_name]
+            #Eliminar tambien de la lista
             self.tree.delete(row)
             self.actualizar_total()
             self.result_label.config(text=f"El producto fue eliminado: {product_name}", bootstyle="warning")
@@ -316,29 +307,66 @@ class VentasPage(ttk.Frame):
         if len(self.productos) > 0:
             try:
                 if float(self.efectivoEntry.get()) > 0 and float(self.efectivoEntry.get()) >= float(self.total_label.cget("text")[1:]):
-                    if self.total_label.cget:
-                        self.send_info_whatsAPP()
+                    if self.add_phone_var.get():
+                        print("MANDA WAHTS")
                     if self.print_ticket_var.get():
-                        print("ticket")
+                        self.send_info_whatsAPP()
+                    #Obtener info de los productos
+                    products = []
+                    cant = 0
+                    for row_id in self.tree.get_children():
+                        aux = {}
+                        p= self.tree.item(row_id)["values"]
+                        aux["product_name"] = p[0]
+                        aux["price"] = float(p[2][1:])
+                        aux["amount"] = int(p[1])
+                        cant += aux["amount"]
+                        aux["active"] = 1
+                        products.append(aux)
+                        print(aux)
+                    #Incertar en tablas
+                    id_sale = self.db.insert("sales", {
+                        "total_price": float(self.total_label.cget("text")[2:]),
+                        "cash": float(self.efectivoEntry.get()),
+                        "change": float(self.change_label.cget("text")[10:]),
+                        "total_products": cant,
+                        "user": "admin",
+                        "active": 1
+                        # "date" no es necesario, se agrega automáticamente
+                    })
+                    #Descontar los productos y registrarlos en la tabla de enta
+                    for p in products:
+                        p["id_sale"] = id_sale
+                        self.db.insert("salesDetail", p)
+                        self.db.modify("inventory", 
+                                       {"product_name": p["product_name"]}, 
+                                       {"amount": self.productos[p["product_name"]] - p["amount"]})
+                    #Limpiar todo 
+                    self.clean_sale()
                     self.result_label.config(text="Se realizo la venta", bootstyle="success")
+                    return
                 else:
                     self.result_label.config(text="Ingresa efectivo suficiente para relizar la venta", bootstyle="danger")
             except ValueError:
                 self.result_label.config(text=ValueError)
+                return
         else:
             self.result_label.config(text="Agrega productos antes de realizar una venta", bootstyle="danger")
+            return
         # Aquí iría la lógica de cobro, validaciones, ticket, etc.
     
     def send_info_whatsAPP(self):
         number = "+52" + self.phone_entry.get().strip()
         message = "✏️Pepeleria el Guerrero Dragon\n" \
-                    "Detalle de compra: \n"
-        for p in self.productos:
-            aux = f"• {p["cantidad"]} {p["producto"]}: {(float(p["cantidad"]) * float(p["precio"])):.2f}\n"
+                    "Detalle de compra:\n"
+        
+        for row_id in self.tree.get_children():
+            p= self.tree.item(row_id)["values"]
+            aux = f"  • {p[1]} {p[0]}: ${(float(p[1]) * float(p[2][1:])):.2f}\n "
             message += aux
         message += f"Total:    {self.total_label.cget("text")} \n"
         message += f"Efectivo: ${self.efectivoEntry.get()} \n"
-        message += f"Cambio:   ${self.change_label.cget("text")[10:]} \n"
+        message += f"Cambio:   ${self.change_label.cget("text")[10:]}\n"
         message += "Gracias por tu preferencia (:"
         print(message)
         #try:
@@ -382,3 +410,12 @@ class VentasPage(ttk.Frame):
         self.phone_entry.delete(0, tk.END)
         self.phone_entry.insert(0, formatted)
         self.phone_entry.icursor(min(original_cursor, len(formatted)))
+    
+    def clean_sale(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.productos = {}
+        self.phone_entry.delete(0, tk.END)
+        self.efectivoEntry.delete(0, tk.END)
+        self.actualizar_total()
+        self.actualizar_cambio()
