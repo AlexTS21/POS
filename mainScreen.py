@@ -59,6 +59,7 @@ class MainApplication:
         elif  self.logged_user['type'] == 1:
             links = {
                 "VENTAS": "ventas",
+                "CORTE": "corte",
             }
 
         nav_links = ttk.Frame(self.navbar, style='primary.TFrame')
@@ -116,7 +117,7 @@ class MainApplication:
             elif page_name == "inventario":
                 self.pages["inventario"] = IN.InventarioPage(self.main_content)
             elif page_name == "corte":
-                self.pages["corte"] = CR.CortePage(self.main_content)
+                self.pages["corte"] = CR.CortePage(self.main_content, self.logged_user)
             elif page_name == "configuracion":
                 self.pages["configuracion"] = CF.ConfiguracionPage(self.main_content, self.style)
         

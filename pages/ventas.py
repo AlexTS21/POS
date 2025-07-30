@@ -3,7 +3,6 @@ from tkinter import ttk, simpledialog, messagebox
 import ttkbootstrap as ttkb
 from ttkbootstrap import Style
 import sqlite3
-import pywhatkit
 from scripts.database import DataBase
 
 #Intento de MEJORAR LA LOGICA DEL programa
