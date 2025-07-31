@@ -165,6 +165,36 @@ class DataBase:
         except Exception as e:
             print("Error al obtener detalles de venta:", e)
             return []
+        
+    def get_ultimos_cortes(self, limite=50):
+        """
+        Obtiene los cortes más recientes, hasta el número especificado por 'limite'.
+
+        Parameters:
+            limite (int): Número máximo de cortes a recuperar (por defecto 50).
+
+        Returns:
+            list[dict]: Lista de cortes con sus campos correspondientes.
+        """
+        query = f"""
+            SELECT id, total, user, date, active
+            FROM corte
+            ORDER BY datetime(date) DESC
+            LIMIT ?;
+        """
+        try:
+            conn = sqlite3.connect(self.database)
+            cursor = conn.cursor()
+            cursor.execute(query, (limite,))
+            resultados = cursor.fetchall()
+            conn.close()
+
+            campos = ["id", "total", "user", "date", "active"]
+            return [{k: v for k, v in zip(campos, r)} for r in resultados] if resultados else []
+        except Exception as e:
+            print("Error al obtener los últimos cortes:", e)
+            return []
+
 
 #db = DataBase("database.db")
 #
