@@ -3,6 +3,7 @@ from tkinter import ttk
 from ttkbootstrap import Style
 import ttkbootstrap as ttkb
 from scripts.database import DataBase
+import pages.detalleVenta as SD
 
 class CortePage(ttk.Frame):
     def __init__(self, parent, user):
@@ -52,7 +53,7 @@ class CortePage(ttk.Frame):
         self.tree.heading("fecha", text="Fecha")
         self.tree.heading("total", text="Total")
         self.tree.heading("usuario", text="Usuario")
-        self.tree.heading("acciones", text="Detalles")
+        self.tree.heading("acciones", text="Acciones")
 
         self.tree.column("id", width=50, anchor='center')
         self.tree.column("fecha", width=150, anchor='center')
@@ -129,23 +130,6 @@ class CortePage(ttk.Frame):
             #Desactivar un boton
             self.corte_button.config(state="disabled")
         return
-
-    def mostrar_detalles_venta(self, venta_id):
-        detalles = self.db.get_detalles_venta(venta_id)
-
-        detalle_win = ttkb.Toplevel(self)
-        detalle_win.title(f"Detalles de venta #{venta_id}")
-        detalle_win.geometry("400x300")
-        detalle_win.configure(bg="white")
-
-        marco = ttkb.Frame(detalle_win, padding=10, bootstyle="success")
-        marco.pack(fill="both", expand=True)
-
-        ttkb.Label(marco, text=f"Detalles de la venta #{venta_id}", font=("Helvetica", 14, "bold")).pack(pady=10)
-
-        for item in detalles:
-            text = f"{item['product_name']} - ${item['price']} x {item['amount']}"
-            ttkb.Label(marco, text=text, font=("Helvetica", 12)).pack(anchor='w', padx=10)
     
     def on_row_click(self, event):
         item_id = self.tree.identify_row(event.y)
@@ -153,4 +137,17 @@ class CortePage(ttk.Frame):
         
         if column == "#5" and item_id:  # Columna 5 = "Detalles"
             venta_id = self.tree.item(item_id)["values"][0]
-            self.mostrar_detalles_venta(venta_id)
+            self.show_saleDetail_form(venta_id)
+    
+    def return_to_corte(self):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        self.pack(fill='both', expand=True)
+        self.load_on_table_sales(self.sales)
+        self.actualizar_total()
+        
+
+    def show_saleDetail_form(self, id):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        SD.DetalleVentaPage(self.master, self.return_to_corte, id, "Volver al corte").pack(fill='both', expand=True)
