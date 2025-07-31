@@ -131,7 +131,7 @@ class HistorialCortePage(ttkb.Frame):
             corte = {
                 "id" : self.tree.item(item_id)["values"][0],
                 "Total": self.tree.item(item_id)["values"][2],
-                "fecha": self.tree.item(item_id)["values"][1],  
+                "Fecha": self.tree.item(item_id)["values"][1],  
                 "Usuario": self.tree.item(item_id)["values"][3],
             }
             self.show_detalleCorte_Page(corte)
@@ -144,5 +144,5 @@ class HistorialCortePage(ttkb.Frame):
     def show_detalleCorte_Page(self, corte):
         for widget in self.master.winfo_children():
             widget.pack_forget()
-        DC.DetalleCortePage(self.master, self.return_to_historial_corte, corte, "Volver al corte").pack(fill='both', expand=True)
+        DC.DetalleCortePage(self.master, self.return_to_historial_corte, corte, "Volver al historial de corte").pack(fill='both', expand=True)
         return
