@@ -4,6 +4,8 @@ from tkinter import ttk
 from ttkbootstrap import Style
 from scripts.database import DataBase
 import tkinter as tk
+import pages.detalleCorte as DC
+
 
 #0 pieza 1 caja 2 metro
 class HistorialCortePage(ttkb.Frame):
@@ -72,7 +74,7 @@ class HistorialCortePage(ttkb.Frame):
 
         self.tree.pack(side='left', fill='both', expand=True)
         self.scrollbar.config(command=self.tree.yview)
-        self.tree.bind("<Button-1>", self.detalleCortePage)
+        self.tree.bind("<Button-1>", self.on_row_click)
         self.cortes = self.db.get_ultimos_cortes()
         self.load_on_table_cortes(self.cortes)
         self.aplicar_filtros()
@@ -119,5 +121,28 @@ class HistorialCortePage(ttkb.Frame):
         self.entry.delete(0, 'end')
         self.aplicar_filtros()
     
-    def detalleCortePage(self):
+    def on_row_click(self, event):
+        item_id = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        
+        if column == "#5" and item_id:  # Columna 5 = "Detalles"
+            #Construct corte object 
+            venta_id = self.tree.item(item_id)["values"][0]
+            corte = {
+                "id" : self.tree.item(item_id)["values"][0],
+                "Total": self.tree.item(item_id)["values"][2],
+                "fecha": self.tree.item(item_id)["values"][1],  
+                "Usuario": self.tree.item(item_id)["values"][3],
+            }
+            self.show_detalleCorte_Page(corte)
+
+    def return_to_historial_corte(self):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        self.pack(fill='both', expand=True)
+
+    def show_detalleCorte_Page(self, corte):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        DC.DetalleCortePage(self.master, self.return_to_historial_corte, corte, "Volver al corte").pack(fill='both', expand=True)
         return
