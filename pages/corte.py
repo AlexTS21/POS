@@ -4,6 +4,7 @@ from ttkbootstrap import Style
 import ttkbootstrap as ttkb
 from scripts.database import DataBase
 import pages.detalleVenta as SD
+import pages.historialCorte as HC
 
 class CortePage(ttk.Frame):
     def __init__(self, parent, user):
@@ -22,7 +23,7 @@ class CortePage(ttk.Frame):
         self.total_label.pack(side='left')
 
         if self.user["type"] == 0:
-            historial_button = ttkb.Button(info_frame, text="Historial de cortes", bootstyle="info-outline")
+            historial_button = ttkb.Button(info_frame, text="Historial de cortes", bootstyle="info-outline", command=self.show_historialCorte_form)
             historial_button.pack(side='right')
         
         self.info_corte = ttkb.Label(self, text="Corte sin realizar ✖", font=("Helvetica", 14),bootstyle="danger")
@@ -146,8 +147,12 @@ class CortePage(ttk.Frame):
         self.load_on_table_sales(self.sales)
         self.actualizar_total()
         
-
     def show_saleDetail_form(self, id):
         for widget in self.master.winfo_children():
             widget.pack_forget()
         SD.DetalleVentaPage(self.master, self.return_to_corte, id, "Volver al corte").pack(fill='both', expand=True)
+
+    def show_historialCorte_form(self):
+        for widget in self.master.winfo_children():
+            widget.pack_forget()
+        HC.HistorialCortePage(self.master, self.return_to_corte, "Volver al corte").pack(fill='both', expand=True)
