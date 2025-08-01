@@ -113,5 +113,5 @@ class DetalleCortePage(ttkb.Frame):
     def show_saleDetail_form(self, id):
         for widget in self.master.winfo_children():
             widget.pack_forget()
-        SD.DetalleVentaPage(self.master, self.return_to_corte, id, "Volver al corte").pack(fill='both', expand=True)
+        SD.DetalleVentaPage(self.master, self.return_to_corte, id, "Volver al detlle de corte").pack(fill='both', expand=True)
 

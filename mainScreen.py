@@ -4,7 +4,7 @@ import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 import LoginScreen as LG
 import pages.ventas as VT
-import pages.configuracion as CF
+import pages.usuarios as US
 import pages.corte as CR
 import pages.inventario as IN
 
@@ -53,7 +53,7 @@ class MainApplication:
                 "VENTAS": "ventas",
                 "INVENTARIO": "inventario",
                 "CORTE": "corte",
-                "CONFIGURACION": "configuracion"
+                "USUARIOS": "usuarios"
             }
             space =180
         elif  self.logged_user['type'] == 1:
@@ -118,8 +118,8 @@ class MainApplication:
                 self.pages["inventario"] = IN.InventarioPage(self.main_content)
             elif page_name == "corte":
                 self.pages["corte"] = CR.CortePage(self.main_content, self.logged_user)
-            elif page_name == "configuracion":
-                self.pages["configuracion"] = CF.ConfiguracionPage(self.main_content, self.style)
+            elif page_name == "usuarios":
+                self.pages["usuarios"] = US.UsuariosPage(self.main_content)
         
 
         if page_name == "corte":
