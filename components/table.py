@@ -22,8 +22,7 @@ class customTable:
         self.data= data
         print(data[0].keys())
         print(fields.keys())
-        scrollbar = ttkb.Scrollbar(frame)
-        scrollbar.pack(side='right', fill='y')
+        
         
         #Filters
         self.orderFiltersValue = None
@@ -32,6 +31,11 @@ class customTable:
         if orderFilters or filters:
             filter_frame = ttkb.Frame(frame)
             filter_frame.pack( fill='x', padx=(0, 30), pady=(0,10))  # Estira horizontalmente
+
+        tableFrame = ttkb.Frame(frame)
+        tableFrame.pack(fill='both', expand=True, pady=(0,10))
+        scrollbar = ttkb.Scrollbar(tableFrame)
+        scrollbar.pack(side='right', fill='y')
 
         #Filtros de orden
         if orderFilters:
@@ -67,7 +71,7 @@ class customTable:
         print(self.orderFiltersValue)
         # Add treeview
         self.tree = ttkb.Treeview(
-            frame,
+            tableFrame,
             columns=list(fields.keys()),
             show='headings',
             yscrollcommand=scrollbar.set,
