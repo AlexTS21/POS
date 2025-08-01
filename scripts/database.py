@@ -18,7 +18,7 @@ class DataBase:
             print("Ocurrió un error al realizar el query:", e)
             return None
     
-    def search(self, table, object, vars, strict=True):
+    def search(self, table, object, vars, strict=True, limit=None):
         query = "SELECT " + ", ".join(vars)
         query += f" FROM {table} WHERE active = 1 AND ("
         union = "OR" if not strict else "AND"
@@ -36,6 +36,11 @@ class DataBase:
         
         query += f" {union} ".join(conditions)
         query += ")"
+
+        
+        if limit is not None:
+            query += " LIMIT ?"
+            values.append(limit)
 
         results = self.make_search_query(query, values)
 
